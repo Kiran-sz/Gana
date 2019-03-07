@@ -1,0 +1,13 @@
+body{
+    background: white url("images/82562e172686be3.jpg");
+}
+
+.navbar
+{
+    border-radius:0;
+}
+
+.navbar-brand
+{
+    font-family: 'Satisfy', cursive;
+}
