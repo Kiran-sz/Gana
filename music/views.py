@@ -4,8 +4,12 @@ from django.http import Http404
 from django.template import loader
 from django.views import generic
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
+from .forms import AlbumForm
 from .models import Album, Song
 from django.shortcuts import get_object_or_404
+
+AUDIO_FILE_TYPES = ['wav', 'mp3', 'ogg']
+IMAGE_FILE_TYPES = ['png', 'jpg', 'jpeg']
 
 
 class IndexView(generic.ListView):
@@ -16,15 +20,31 @@ class IndexView(generic.ListView):
         return Album.objects.all()
 
 
-class DetailView(generic.DetailView):
-    model = Album
-    template_name = 'music/detail.html'
+def detail(request, album_id):
+    album = get_object_or_404(Album, pk=album_id)
+    return render(request, 'music/detail.html', {'album': album})
 
 
-class AlbumCreate(CreateView):
-    model = Album
-    template_name = 'music/album_form.html'
-    fields = ['artist', 'album_title', 'genre', 'album_logo']
+def create_album(request):
+        form = AlbumForm(request.POST or None, request.FILES or None)
+        if form.is_valid():
+            album = form.save(commit=False)
+            album.album_logo = request.FILES['album_logo']
+            file_type = album.album_logo.url.split('.')[-1]
+            file_type = file_type.lower()
+            if file_type not in IMAGE_FILE_TYPES:
+                context = {
+                    'album': album,
+                    'form': form,
+                    'error_message': 'Image file must be PNG, JPG, or JPEG',
+                }
+                return render(request, 'music/album_form.html', context)
+            album.save()
+            return render(request, 'music/detail.html', {'album': album})
+        context = {
+            "form": form,
+        }
+        return render(request, 'music/album_form.html', context)
 
 
 class SongCreate(CreateView):
@@ -35,4 +55,6 @@ class SongCreate(CreateView):
         album = get_object_or_404(Album, pk=self.kwargs['pk'])
         form.instance.album = album
         return super(AlbumCreate, self).form_valid(form)
+
+
 
